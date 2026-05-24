@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model VacationRequest {
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  requesterName      String
+  requesterEmail     String
+  requesterPhone     String?
+  relationship       String
+
+  priestName         String
+  priestParish       String
+  priestDiocese      String
+
+  preferredStartDate DateTime?
+  duration           String
+  destinationType    String
+  specialNotes       String?
+
+  status             String   @default("pending")
+  estimatedCost      Decimal? @db.Decimal(10, 2)
+  dioceseNotes       String?
+  
+  reviewedAt         DateTime?
+  reviewedBy         String?
+
+  @@map("vacation_requests")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("diocese_admin")
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}
