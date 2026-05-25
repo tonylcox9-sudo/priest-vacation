@@ -27,12 +27,12 @@ export async function sendRequestConfirmation(
       subject: `Vacation Request Received - Fr. ${priestName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1e3a5f;">Vacation Request Submitted</h2>
+          <h2 style="color: #2D1B4E;">Vacation Request Submitted</h2>
           <p>Dear Sir/Madam,</p>
           <p>We have received your vacation request for <strong>Fr. ${priestName}</strong>.</p>
           <p>Your request ID: <strong>${requestId}</strong></p>
           <p>The diocese will review your request and respond within 48 hours with estimated costs and next steps.</p>
-          <p>If you have questions, reply to this email or call the diocese office.</p>
+          <p>You can track your request at your dashboard.</p>
           <br/>
           <p>God bless,</p>
           <p><em>Catholic Diocese Vacation Office</em></p>
@@ -51,13 +51,18 @@ export async function sendStatusUpdate(
   cost: string | null,
   notes: string | null
 ) {
-  const statusColor = status === 'approved' ? '#22c55e' : status === 'denied' ? '#ef4444' : '#f59e0b'
-  
+  const statusMessages: Record<string, string> = {
+    pending: "Your request is pending review.",
+    under_review: "Your request is now under review by the diocese.",
+    payment_required: "Payment is required to proceed with your request.",
+    approved: "Your request has been approved! Payment verified.",
+    denied: "Your request has been denied.",
+  }
+
   console.log(`📧 EMAIL SENT (Status Update):`)
   console.log(`   To: ${to}`)
   console.log(`   Subject: Vacation Request ${status.toUpperCase()} - Fr. ${priestName}`)
   console.log(`   Status: ${status}`)
-  console.log(`   Cost: ${cost || 'Not set'}`)
   console.log(`   ---`)
 
   if (!resend) {
@@ -72,12 +77,14 @@ export async function sendStatusUpdate(
       subject: `Vacation Request ${status.toUpperCase()} - Fr. ${priestName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: ${statusColor};">Request ${status.toUpperCase()}</h2>
+          <h2 style="color: #2D1B4E;">Request Update</h2>
           <p>Dear Sir/Madam,</p>
-          <p>Your vacation request for <strong>Fr. ${priestName}</strong> has been <strong>${status}</strong>.</p>
+          <p>Your vacation request for <strong>Fr. ${priestName}</strong> has been updated.</p>
+          <p><strong>Status:</strong> ${status.replace("_", " ").toUpperCase()}</p>
+          <p>${statusMessages[status] || ""}</p>
           ${cost ? `<p><strong>Estimated Cost:</strong> $${cost}</p>` : ''}
-          ${notes ? `<p><strong>Diocese Notes:</strong> ${notes}</p>` : ''}
-          <p>Please contact the diocese office for payment instructions and further arrangements.</p>
+          ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+          <p>Log in to your dashboard to see full details.</p>
           <br/>
           <p>God bless,</p>
           <p><em>Catholic Diocese Vacation Office</em></p>

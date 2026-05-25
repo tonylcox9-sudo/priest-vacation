@@ -6,9 +6,9 @@ const prisma = new PrismaClient()
 async function main() {
   const email = process.env.ADMIN_EMAIL || 'admin@diocese.org'
   const password = process.env.ADMIN_PASSWORD || 'changeme123'
-  
+
   const hashedPassword = await bcrypt.hash(password, 10)
-  
+
   await prisma.admin.upsert({
     where: { email },
     update: {},
@@ -19,7 +19,7 @@ async function main() {
       role: 'super_admin'
     }
   })
-  
+
   console.log(`Admin created: ${email}`)
 }
 

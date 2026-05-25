@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react"
 import { useState } from "react"
 import Link from "next/link"
 
-export default function AdminLogin() {
+export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -15,18 +15,18 @@ export default function AdminLogin() {
     setLoading(true)
     setError("")
 
-    const result = await signIn("admin-login", {
+    const result = await signIn("user-login", {
       email,
       password,
       redirect: false,
-      callbackUrl: "/admin",
+      callbackUrl: "/dashboard",
     })
 
     if (result?.error) {
-      setError("Invalid credentials")
+      setError("Invalid email or password")
       setLoading(false)
     } else {
-      window.location.href = "/admin"
+      window.location.href = "/dashboard"
     }
   }
 
@@ -35,8 +35,8 @@ export default function AdminLogin() {
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md border border-[#C9A227]/20">
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">⛪</div>
-          <h1 className="text-2xl font-bold text-[#2D1B4E]">Diocese Admin</h1>
-          <p className="text-gray-500 mt-1">Sign in to manage vacation requests</p>
+          <h1 className="text-2xl font-bold text-[#2D1B4E]">Welcome Back</h1>
+          <p className="text-gray-500 mt-1">Sign in to your account</p>
         </div>
 
         {error && (
@@ -53,7 +53,7 @@ export default function AdminLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="admin@diocese.org"
+              placeholder="your@email.com"
               autoComplete="off"
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none"
             />
@@ -65,7 +65,7 @@ export default function AdminLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="Enter password"
+              placeholder="Enter your password"
               autoComplete="new-password"
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none"
             />
@@ -80,12 +80,12 @@ export default function AdminLogin() {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Authorized personnel only</p>
+          <p>Don't have an account? <Link href="/register" className="text-[#C9A227] font-medium hover:underline">Create one</Link></p>
         </div>
 
         <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-          <Link href="/login" className="text-xs text-gray-400 hover:text-[#2D1B4E]">
-            User Login →
+          <Link href="/admin/login" className="text-xs text-gray-400 hover:text-[#2D1B4E]">
+            Diocese Admin Login →
           </Link>
         </div>
       </div>

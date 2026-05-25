@@ -6,13 +6,22 @@ import { sendStatusUpdate } from "@/lib/email"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
-  if (!session) {
+  if (!session || session.user?.userType !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
     const requests = await prisma.vacationRequest.findMany({
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+          }
+        }
+      }
     })
     return NextResponse.json(requests)
   } catch (error) {
@@ -22,7 +31,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions)
-  if (!session) {
+  if (!session || session.user?.userType !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -35,14 +44,25 @@ export async function PATCH(request: Request) {
         status: body.status,
         estimatedCost: body.estimatedCost,
         dioceseNotes: body.dioceseNotes,
+        bankName: body.bankName,
+        accountNumber: body.accountNumber,
+        accountName: body.accountName,
         reviewedAt: new Date(),
         reviewedBy: session.user?.email as string,
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+          }
+        }
       }
     })
 
-    // Send email notification to requester
     await sendStatusUpdate(
-      updated.requesterEmail,
+      updated.user.email,
       updated.priestName,
       updated.status,
       updated.estimatedCost?.toString() || null,

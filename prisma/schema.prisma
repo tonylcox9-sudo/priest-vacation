@@ -7,42 +7,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model VacationRequest {
-  id                 String   @id @default(cuid())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  requesterName      String
-  requesterEmail     String
-  requesterPhone     String?
-  relationship       String
-
-  priestName         String
-  priestParish       String
-  priestDiocese      String
-
-  preferredStartDate DateTime?
-  duration           String
-  destinationType    String
-  specialNotes       String?
-
-  status             String   @default("pending")
-  estimatedCost      Decimal? @db.Decimal(10, 2)
-  dioceseNotes       String?
+model User {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  name          String
+  email         String   @unique
+  password      String
+  phone         String?
+  emailVerified DateTime?
   
-  reviewedAt         DateTime?
-  reviewedBy         String?
-
-  @@map("vacation_requests")
+  vacationRequests VacationRequest[]
+  
+  @@map("users")
 }
 
 model Admin {
   id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
   email     String   @unique
   password  String
   name      String?
   role      String   @default("diocese_admin")
-  createdAt DateTime @default(now())
-
+  
   @@map("admins")
+}
+
+model VacationRequest {
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Link to user
+  userId             String
+  user               User     @relation(fields: [userId], references: [id])
+  
+  // Priest info
+  priestName         String
+  priestParish       String
+  priestDiocese      String
+  
+  // Vacation details
+  preferredStartDate DateTime?
+  duration           String
+  destinationType    String
+  specialNotes       String?
+  
+  // Diocese workflow
+  status             String   @default("pending")
+  // pending, under_review, payment_required, payment_pending, payment_verified, approved, denied
+  
+  estimatedCost      Decimal? @db.Decimal(10, 2)
+  dioceseNotes       String?
+  
+  // Payment
+  bankName           String?
+  accountNumber      String?
+  accountName        String?
+  
+  // Receipt upload
+  receiptUrl         String?
+  receiptUploadedAt  DateTime?
+  
+  // Tracking
+  reviewedAt         DateTime?
+  reviewedBy         String?
+  paymentVerifiedAt  DateTime?
+  paymentVerifiedBy  String?
+  
+  @@map("vacation_requests")
 }

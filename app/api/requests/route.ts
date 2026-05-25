@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendRequestConfirmation } from "@/lib/email"
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions)
+
+  if (!session || session.user?.userType !== "user") {
+    return NextResponse.json({ error: "Please sign in first" }, { status: 401 })
+  }
+
   try {
     const body = await request.json()
 
-    // Handle date properly - only convert if valid date string exists
     let startDate: Date | null = null
     if (body.preferredStartDate && body.preferredStartDate.trim() !== "") {
       const parsed = new Date(body.preferredStartDate)
-      // Check if valid date (not NaN and reasonable year)
       if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
         startDate = parsed
       }
@@ -18,10 +24,7 @@ export async function POST(request: Request) {
 
     const vacationRequest = await prisma.vacationRequest.create({
       data: {
-        requesterName: body.requesterName,
-        requesterEmail: body.requesterEmail,
-        requesterPhone: body.requesterPhone || null,
-        relationship: body.relationship,
+        userId: session.user.id!,
         priestName: body.priestName,
         priestParish: body.priestParish,
         priestDiocese: body.priestDiocese,
@@ -32,9 +35,8 @@ export async function POST(request: Request) {
       }
     })
 
-    // Send confirmation email
     await sendRequestConfirmation(
-      body.requesterEmail,
+      session.user.email!,
       body.priestName,
       vacationRequest.id
     )
