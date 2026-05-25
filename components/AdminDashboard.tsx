@@ -1,10 +1,17 @@
 "use client"
 
 import { useState } from "react"
+import RequestCard from "./RequestCard"
+
+interface User {
+  name: string
+  email: string
+  phone: string | null
+}
 
 interface Request {
   id: string
-  user: { name: string; email: string; phone: string | null }
+  user: User
   priestName: string
   priestParish: string
   priestDiocese: string
@@ -27,218 +34,83 @@ interface Request {
   paymentVerifiedBy: string | null
 }
 
-export default function RequestCard({ request, onUpdate }: { request: Request; onUpdate: () => void }) {
-  const [editing, setEditing] = useState(false)
-  const [status, setStatus] = useState(request.status)
-  const [cost, setCost] = useState(request.estimatedCost || "")
-  const [notes, setNotes] = useState(request.dioceseNotes || "")
-  const [bankName, setBankName] = useState(request.bankName || "")
-  const [accountNumber, setAccountNumber] = useState(request.accountNumber || "")
-  const [accountName, setAccountName] = useState(request.accountName || "")
-  const [loading, setLoading] = useState(false)
+export default function AdminDashboard({ initialRequests }: { initialRequests: Request[] }) {
+  const [requests, setRequests] = useState<Request[]>(initialRequests)
+  const [filter, setFilter] = useState("all")
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    under_review: "bg-blue-100 text-blue-800 border-blue-300",
-    payment_required: "bg-purple-100 text-purple-800 border-purple-300",
-    payment_pending: "bg-orange-100 text-orange-800 border-orange-300",
-    payment_verified: "bg-teal-100 text-teal-800 border-teal-300",
-    approved: "bg-green-100 text-green-800 border-green-300",
-    denied: "bg-red-100 text-red-800 border-red-300",
+  const filteredRequests = filter === "all"
+    ? requests
+    : requests.filter(r => r.status === filter)
+
+  const stats = {
+    total: requests.length,
+    pending: requests.filter(r => r.status === "pending").length,
+    underReview: requests.filter(r => r.status === "under_review").length,
+    approved: requests.filter(r => r.status === "approved").length,
+    denied: requests.filter(r => r.status === "denied").length,
   }
 
-  const destinationLabels: Record<string, string> = {
-    retreat: "Retreat / Spiritual Renewal",
-    family_visit: "Family Visit",
-    rest: "Rest & Recovery",
-    study: "Study / Conference",
-    other: "Other",
-  }
-
-  async function handleUpdate() {
-    setLoading(true)
+  async function refreshRequests() {
     try {
-      const res = await fetch("/api/admin/requests", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: request.id,
-          status,
-          estimatedCost: cost ? parseFloat(cost) : null,
-          dioceseNotes: notes,
-          bankName: bankName || null,
-          accountNumber: accountNumber || null,
-          accountName: accountName || null,
-        }),
-      })
-
-      if (res.ok) {
-        setEditing(false)
-        onUpdate()
-      }
+      const res = await fetch("/api/admin/requests")
+      const data = await res.json()
+      setRequests(data)
     } catch (error) {
-      alert("Update failed")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function verifyPayment() {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/admin/verify-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: request.id }),
-      })
-
-      if (res.ok) {
-        onUpdate()
-      }
-    } catch (error) {
-      alert("Verification failed")
-    } finally {
-      setLoading(false)
+      console.error("Failed to refresh:", error)
     }
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md border-l-4 border-[#2D1B4E] overflow-hidden">
-      <div className="p-6">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold text-[#2D1B4E]">Fr. {request.priestName}</h3>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusColors[request.status]}`}>
-                {request.status.replace("_", " ").toUpperCase()}
-              </span>
-            </div>
-            <p className="text-gray-600">{request.priestParish} • {request.priestDiocese}</p>
-          </div>
-          <div className="text-right text-sm text-gray-400">
-            <p>Submitted: {new Date(request.createdAt).toLocaleDateString()}</p>
-            <p className="text-xs mt-1">ID: {request.id.slice(0, 8)}...</p>
-          </div>
+    <div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
+          <p className="text-2xl font-bold text-[#2D1B4E]">{stats.total}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Total</p>
         </div>
-
-        {/* Requester Info */}
-        <div className="bg-blue-50 rounded-lg p-4 mb-4">
-          <p className="text-xs text-blue-500 uppercase tracking-wider mb-2">Requested By</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div>
-              <p className="text-gray-400 text-xs">Name</p>
-              <p className="font-medium text-gray-900">{request.user.name}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-xs">Email</p>
-              <p className="font-medium text-gray-900">{request.user.email}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-xs">Phone</p>
-              <p className="font-medium text-gray-900">{request.user.phone || "N/A"}</p>
-            </div>
-          </div>
+        <div className="bg-white rounded-lg border border-yellow-200 p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Pending</p>
         </div>
-
-        {/* Vacation Details */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 bg-[#F8F6F1] rounded-lg p-4">
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Start Date</p>
-            <p className="font-medium text-gray-900">
-              {request.preferredStartDate ? new Date(request.preferredStartDate).toLocaleDateString() : "Not set"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Duration</p>
-            <p className="font-medium text-gray-900">{request.duration}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Type</p>
-            <p className="font-medium text-gray-900">{destinationLabels[request.destinationType] || request.destinationType}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Est. Cost</p>
-            <p className="font-medium text-[#C9A227]">{request.estimatedCost ? `$${request.estimatedCost}` : "Not set"}</p>
-          </div>
+        <div className="bg-white rounded-lg border border-blue-200 p-4 text-center">
+          <p className="text-2xl font-bold text-blue-600">{stats.underReview}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Under Review</p>
         </div>
+        <div className="bg-white rounded-lg border border-green-200 p-4 text-center">
+          <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Approved</p>
+        </div>
+        <div className="bg-white rounded-lg border border-red-200 p-4 text-center">
+          <p className="text-2xl font-bold text-red-600">{stats.denied}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">Denied</p>
+        </div>
+      </div>
 
-        {/* Special Notes */}
-        {request.specialNotes && (
-          <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Special Notes</p>
-            <p className="text-gray-700 text-sm">{request.specialNotes}</p>
-          </div>
-        )}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {["all", "pending", "under_review", "approved", "denied"].map((status) => (
+          <button
+            key={status}
+            onClick={() => setFilter(status)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              filter === status
+                ? "bg-[#2D1B4E] text-[#C9A227]"
+                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {status === "all" ? "All Requests" : status.replace("_", " ").toUpperCase()}
+          </button>
+        ))}
+      </div>
 
-        {/* Receipt Upload */}
-        {request.receiptUrl && (
-          <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-xs text-orange-500 uppercase tracking-wider mb-1">Payment Receipt Uploaded</p>
-            <p className="text-sm text-gray-700 mb-2">
-              Uploaded: {request.receiptUploadedAt ? new Date(request.receiptUploadedAt).toLocaleDateString() : "Unknown"}
-            </p>
-            {request.status === "payment_pending" && (
-              <button
-                onClick={verifyPayment}
-                disabled={loading}
-                className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
-              >
-                {loading ? "Verifying..." : "✓ Verify Payment"}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Edit Form */}
-        {editing ? (
-          <div className="space-y-4 border-t border-gray-100 pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none">
-                  <option value="pending">Pending</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="payment_required">Payment Required</option>
-                  <option value="approved">Approved</option>
-                  <option value="denied">Denied</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Cost ($)</label>
-                <input type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g., Chase Bank" className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="0000000000" className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
-                <input type="text" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Account Holder Name" className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Diocese Notes</label>
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Internal notes..." className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none" />
-            </div>
-            <div className="flex gap-3">
-              <button onClick={handleUpdate} disabled={loading} className="bg-[#2D1B4E] text-[#C9A227] px-6 py-2 rounded-md hover:bg-[#3D2B5E] disabled:opacity-50 font-medium transition-colors">
-                {loading ? "Saving..." : "Save & Notify Requester"}
-              </button>
-              <button onClick={() => setEditing(false)} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 font-medium transition-colors">
-                Cancel
-              </button>
-            </div>
+      <div className="grid gap-4">
+        {filteredRequests.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <p className="text-gray-400 text-lg">No requests found.</p>
+            <p className="text-gray-300 text-sm mt-1">New submissions will appear here.</p>
           </div>
         ) : (
-          <button onClick={() => setEditing(true)} className="text-[#2D1B4E] hover:text-[#C9A227] text-sm font-semibold transition-colors flex items-center gap-1">
-            Review / Update Request →
-          </button>
+          filteredRequests.map((request) => (
+            <RequestCard key={request.id} request={request} onUpdate={refreshRequests} />
+          ))
         )}
       </div>
     </div>
