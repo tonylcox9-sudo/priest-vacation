@@ -28,8 +28,8 @@ declare module "next-auth/jwt" {
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
-    // User login (requester)
     CredentialsProvider({
       id: "user-login",
       name: "User Account",
@@ -58,7 +58,6 @@ export const authOptions: NextAuthOptions = {
         }
       }
     }),
-    // Admin login (diocese)
     CredentialsProvider({
       id: "admin-login",
       name: "Diocese Admin",
