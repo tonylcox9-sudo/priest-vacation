@@ -17,6 +17,10 @@ model User {
   phone         String?
   emailVerified DateTime?
   
+  // Password reset
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+  
   vacationRequests VacationRequest[]
   
   @@map("users")

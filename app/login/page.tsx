@@ -70,6 +70,11 @@ export default function LoginPage() {
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-[#C9A227] focus:ring-[#C9A227] focus:outline-none"
             />
           </div>
+          <div className="flex justify-between items-center text-sm">
+            <Link href="/forgot-password" className="text-[#C9A227] hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <button
             type="submit"
             disabled={loading}
@@ -85,7 +90,7 @@ export default function LoginPage() {
 
         <div className="mt-4 pt-4 border-t border-gray-100 text-center">
           <Link href="/admin/login" className="text-xs text-gray-400 hover:text-[#2D1B4E]">
-            Diocese Admin Login →
+            Diocese Admin Login &rarr;
           </Link>
         </div>
       </div>

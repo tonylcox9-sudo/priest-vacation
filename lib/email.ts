@@ -95,3 +95,47 @@ export async function sendStatusUpdate(
     console.error('Email failed:', error)
   }
 }
+
+export async function sendPasswordResetEmail(
+  to: string,
+  name: string | null,
+  resetUrl: string
+) {
+  console.log(`📧 PASSWORD RESET EMAIL:`)
+  console.log(`   To: ${to}`)
+  console.log(`   Reset URL: ${resetUrl}`)
+  console.log(`   ---`)
+
+  if (!resend) {
+    console.log(`   ⚠️  Resend not configured - email logged to console only`)
+    return
+  }
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: "Password Reset Request - Diocese Vacation",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2D1B4E;">Password Reset</h2>
+          <p>Hello ${name || "there"},</p>
+          <p>We received a request to reset your password for your Diocese Vacation account.</p>
+          <p>Click the button below to reset your password. This link expires in 1 hour.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #2D1B4E; color: #C9A227; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+              Reset Password
+            </a>
+          </div>
+          <p style="color: #666; font-size: 12px;">If you didn't request this, you can safely ignore this email.</p>
+          <p style="color: #666; font-size: 12px;">This link will expire in 1 hour.</p>
+          <br/>
+          <p>God bless,</p>
+          <p><em>Catholic Diocese Vacation Office</em></p>
+        </div>
+      `
+    })
+  } catch (error) {
+    console.error('Password reset email failed:', error)
+  }
+}
