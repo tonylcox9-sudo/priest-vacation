@@ -146,17 +146,62 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
   }
 
   // Detect file type from base64 data URL
-  const getFileType = (url: string | null): string => {
-    if (!url) return "unknown"
-    if (url.startsWith("data:image/")) return "image"
-    if (url.startsWith("data:application/pdf")) return "pdf"
-    if (url.startsWith("data:")) return "other"
-    return "url"
+  const getFileType = (url: string | null): { type: string; label: string } => {
+    if (!url) return { type: "unknown", label: "Unknown" }
+    if (url.startsWith("data:image/png")) return { type: "image", label: "PNG Image" }
+    if (url.startsWith("data:image/jpeg")) return { type: "image", label: "JPEG Image" }
+    if (url.startsWith("data:image/jpg")) return { type: "image", label: "JPG Image" }
+    if (url.startsWith("data:image/gif")) return { type: "image", label: "GIF Image" }
+    if (url.startsWith("data:image/webp")) return { type: "image", label: "WEBP Image" }
+    if (url.startsWith("data:image/bmp")) return { type: "image", label: "BMP Image" }
+    if (url.startsWith("data:image/svg")) return { type: "image", label: "SVG Image" }
+    if (url.startsWith("data:image/tiff")) return { type: "image", label: "TIFF Image" }
+    if (url.startsWith("data:image/heic")) return { type: "image", label: "HEIC Image" }
+    if (url.startsWith("data:image/heif")) return { type: "image", label: "HEIF Image" }
+    if (url.startsWith("data:application/pdf")) return { type: "pdf", label: "PDF Document" }
+    if (url.startsWith("data:")) return { type: "other", label: "File" }
+    return { type: "url", label: "External Link" }
   }
 
-  const fileType = getFileType(request.receiptUrl)
-  const isImage = fileType === "image"
-  const isPdf = fileType === "pdf"
+  const fileInfo = getFileType(request.receiptUrl)
+  const isImage = fileInfo.type === "image"
+  const isPdf = fileInfo.type === "pdf"
+
+  // Open base64 in new window properly
+  const openInNewWindow = () => {
+    if (!request.receiptUrl) return
+    const newWindow = window.open("", "_blank")
+    if (newWindow) {
+      if (isPdf) {
+        newWindow.document.write(`
+          <html>
+            <head><title>PDF Receipt</title><style>body{margin:0;height:100vh}</style></head>
+            <body>
+              <embed src="${request.receiptUrl}" type="application/pdf" width="100%" height="100%" />
+            </body>
+          </html>
+        `)
+      } else if (isImage) {
+        newWindow.document.write(`
+          <html>
+            <head><title>Receipt Image</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1a1a1a}</style></head>
+            <body><img src="${request.receiptUrl}" style="max-width:95%;max-height:95vh;object-fit:contain" /></body>
+          </html>
+        `)
+      } else {
+        newWindow.document.write(`
+          <html>
+            <head><title>Receipt</title></head>
+            <body style="margin:0;padding:20px">
+              <p>Receipt file</p>
+              <a href="${request.receiptUrl}" download>Download</a>
+            </body>
+          </html>
+        `)
+      }
+      newWindow.document.close()
+    }
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-md border-l-4 border-[#2D1B4E] overflow-hidden">
@@ -227,7 +272,10 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
         {request.receiptUrl && (
           <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-orange-600 uppercase tracking-wider font-bold">Payment Receipt Uploaded</p>
+              <div>
+                <p className="text-xs text-orange-600 uppercase tracking-wider font-bold">Payment Receipt Uploaded</p>
+                <p className="text-xs text-gray-400">{fileInfo.label}</p>
+              </div>
               <button
                 onClick={() => setShowReceipt(!showReceipt)}
                 className="text-sm text-[#2D1B4E] font-medium hover:text-[#C9A227] transition-colors"
@@ -246,57 +294,33 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
                     <img
                       src={request.receiptUrl}
                       alt="Payment Receipt"
-                      className="max-w-full max-h-96 rounded-lg border border-gray-200"
+                      className="max-w-full max-h-96 rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={openInNewWindow}
                     />
-                    <p className="text-xs text-gray-400 mt-2">Image receipt</p>
+                    <p className="text-xs text-gray-400 mt-2 text-center">Click image to view full size</p>
                   </div>
                 ) : isPdf ? (
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">📄 PDF Receipt</p>
-                    <div className="w-full h-96 rounded-lg border border-gray-200 overflow-hidden">
-                      <iframe
-                        src={request.receiptUrl}
-                        className="w-full h-full"
-                        title="PDF Receipt"
-                      />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <span className="text-2xl">📄</span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">PDF Document</p>
+                        <p className="text-xs text-gray-400">Click below to view</p>
+                      </div>
                     </div>
                     <button
-                      onClick={() => {
-                        const newWindow = window.open()
-                        if (newWindow) {
-                          newWindow.document.write(`
-                            <html>
-                              <head><title>PDF Receipt</title></head>
-                              <body style="margin:0">
-                                <iframe src="${request.receiptUrl}" width="100%" height="100%" style="border:none"></iframe>
-                              </body>
-                            </html>
-                          `)
-                        }
-                      }}
-                      className="text-sm text-[#C9A227] underline"
+                      onClick={openInNewWindow}
+                      className="w-full bg-[#2D1B4E] text-[#C9A227] py-2 rounded-md hover:bg-[#3D2B5E] font-medium transition-colors"
                     >
-                      Open PDF in new window
+                      Open PDF in New Window
                     </button>
                   </div>
                 ) : (
-                  <div className="p-4 text-center">
-                    <p className="text-sm text-gray-500">Receipt file uploaded</p>
+                  <div className="text-center p-4">
+                    <p className="text-sm text-gray-500 mb-3">Receipt file ({fileInfo.label})</p>
                     <button
-                      onClick={() => {
-                        const newWindow = window.open()
-                        if (newWindow && request.receiptUrl) {
-                          newWindow.document.write(`
-                            <html>
-                              <head><title>Receipt</title></head>
-                              <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5">
-                                <iframe src="${request.receiptUrl}" width="90%" height="90vh" style="border:none"></iframe>
-                              </body>
-                            </html>
-                          `)
-                        }
-                      }}
-                      className="mt-2 text-sm bg-[#2D1B4E] text-[#C9A227] px-4 py-2 rounded-md"
+                      onClick={openInNewWindow}
+                      className="bg-[#2D1B4E] text-[#C9A227] px-4 py-2 rounded-md hover:bg-[#3D2B5E] font-medium transition-colors"
                     >
                       View Receipt
                     </button>
