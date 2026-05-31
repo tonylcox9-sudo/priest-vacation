@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 
 export default function UploadReceiptPage() {
@@ -9,10 +9,23 @@ export default function UploadReceiptPage() {
   const requestId = params?.id as string
 
   const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  console.log("Upload page loaded, requestId:", requestId)
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0] || null
+    setFile(selected)
+    setError("")
+
+    if (selected) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreview(reader.result as string)
+      }
+      reader.readAsDataURL(selected)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -29,29 +42,35 @@ export default function UploadReceiptPage() {
     setLoading(true)
     setError("")
 
-    const formData = new FormData()
-    formData.append("receipt", file)
-    formData.append("requestId", requestId)
-
-    console.log("Uploading receipt for requestId:", requestId)
-
     try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(file)
+      })
+
       const res = await fetch("/api/upload-receipt", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId,
+          receiptData: base64,
+          fileName: file.name,
+          fileType: file.type,
+        }),
       })
 
       const data = await res.json()
-      console.log("Upload response:", data)
 
       if (res.ok) {
         router.push("/dashboard")
       } else {
         setError(data.error || "Upload failed")
       }
-    } catch (error: any) {
-      console.error("Upload error:", error)
-      setError(error.message || "Something went wrong")
+    } catch (err: any) {
+      console.error("Upload error:", err)
+      setError(err.message || "Something went wrong")
     } finally {
       setLoading(false)
     }
@@ -77,7 +96,7 @@ export default function UploadReceiptPage() {
             <input
               type="file"
               accept="image/*,.pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={handleFileChange}
               required
               className="hidden"
               id="receipt"
@@ -90,6 +109,17 @@ export default function UploadReceiptPage() {
               <p className="text-sm text-gray-400 mt-1">PNG, JPG, or PDF</p>
             </label>
           </div>
+
+          {preview && file?.type.startsWith("image/") && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-500 mb-2">Preview:</p>
+              <img
+                src={preview}
+                alt="Receipt preview"
+                className="max-w-full max-h-64 rounded-lg border border-gray-200"
+              />
+            </div>
+          )}
 
           <button
             type="submit"

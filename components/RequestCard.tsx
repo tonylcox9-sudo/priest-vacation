@@ -109,6 +109,11 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
     }
   }
 
+  // Check if receiptUrl is a base64 data URL
+  const isBase64 = request.receiptUrl?.startsWith("data:")
+  const isImage = request.receiptUrl?.startsWith("data:image/")
+  const isPdf = request.receiptUrl?.startsWith("data:application/pdf")
+
   return (
     <div className="bg-white rounded-xl shadow-md border-l-4 border-[#2D1B4E] overflow-hidden">
       <div className="p-6">
@@ -191,7 +196,13 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
 
             {showReceipt && (
               <div className="mt-3 p-3 bg-white rounded-lg border border-orange-200">
-                {request.receiptUrl.endsWith(".pdf") ? (
+                {isImage ? (
+                  <img
+                    src={request.receiptUrl}
+                    alt="Payment Receipt"
+                    className="max-w-full max-h-96 rounded-lg border border-gray-200"
+                  />
+                ) : isPdf ? (
                   <a
                     href={request.receiptUrl}
                     target="_blank"
@@ -201,12 +212,13 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
                     <span>📄</span> Open PDF Receipt
                   </a>
                 ) : (
-                  <a href={request.receiptUrl} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={request.receiptUrl}
-                      alt="Payment Receipt"
-                      className="max-w-full max-h-96 rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
-                    />
+                  <a
+                    href={request.receiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[#2D1B4E] font-medium hover:text-[#C9A227]"
+                  >
+                    <span>📄</span> View Receipt
                   </a>
                 )}
               </div>

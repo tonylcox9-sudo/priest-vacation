@@ -11,17 +11,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const formData = await request.formData()
-    const requestId = formData.get("requestId") as string
-    const file = formData.get("receipt") as File
+    const { requestId, receiptData, fileName, fileType } = await request.json()
 
     console.log("Upload receipt called:")
     console.log("  requestId:", requestId)
     console.log("  userId:", session.user.id)
-    console.log("  file:", file?.name)
+    console.log("  fileName:", fileName)
+    console.log("  fileType:", fileType)
+    console.log("  receiptData length:", receiptData?.length)
 
-    if (!requestId || !file) {
-      return NextResponse.json({ error: "Missing requestId or receipt file" }, { status: 400 })
+    if (!requestId || !receiptData) {
+      return NextResponse.json({ error: "Missing requestId or receipt data" }, { status: 400 })
     }
 
     // Verify the request exists and belongs to this user
@@ -37,11 +37,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Request not found or not authorized" }, { status: 404 })
     }
 
-    // In production, upload to Cloudinary, S3, or UploadThing
-    // For now, we'll store a placeholder URL
-    const receiptUrl = `/receipts/${requestId}-${file.name}`
+    // For now, store the base64 data directly in the database
+    // In production, you should upload to Cloudinary/S3 and store the URL
+    const receiptUrl = receiptData
 
-    // Update request status
     await prisma.vacationRequest.update({
       where: { id: requestId },
       data: {
