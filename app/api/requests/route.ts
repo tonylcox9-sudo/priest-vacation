@@ -5,13 +5,23 @@ import { prisma } from "@/lib/prisma"
 import { sendRequestConfirmation } from "@/lib/email"
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions)
-
-  if (!session || session.user?.userType !== "user") {
-    return NextResponse.json({ error: "Please sign in first" }, { status: 401 })
-  }
-
   try {
+    const session = await getServerSession(authOptions)
+
+    console.log("Session:", JSON.stringify(session, null, 2))
+
+    if (!session) {
+      return NextResponse.json({ error: "No session found. Please log in." }, { status: 401 })
+    }
+
+    if (session.user?.userType !== "user") {
+      return NextResponse.json({ error: "Unauthorized. User login required." }, { status: 401 })
+    }
+
+    if (!session.user?.id) {
+      return NextResponse.json({ error: "User ID not found in session. Please log out and log back in." }, { status: 401 })
+    }
+
     const body = await request.json()
 
     let startDate: Date | null = null
@@ -24,7 +34,7 @@ export async function POST(request: Request) {
 
     const vacationRequest = await prisma.vacationRequest.create({
       data: {
-        userId: session.user.id!,
+        userId: session.user.id,
         priestName: body.priestName,
         priestParish: body.priestParish,
         priestDiocese: body.priestDiocese,
@@ -42,10 +52,10 @@ export async function POST(request: Request) {
     )
 
     return NextResponse.json({ success: true, id: vacationRequest.id })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Request creation error:", error)
     return NextResponse.json(
-      { error: "Failed to create request" },
+      { error: error.message || "Failed to create request" },
       { status: 500 }
     )
   }
