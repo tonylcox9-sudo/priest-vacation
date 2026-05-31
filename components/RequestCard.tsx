@@ -54,6 +54,16 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
     denied: "bg-red-100 text-red-800 border-red-300",
   }
 
+  const statusFlow: Record<string, string> = {
+    pending: "Awaiting review",
+    under_review: "Under review by diocese",
+    payment_required: "Payment required from requester",
+    payment_pending: "Receipt uploaded, awaiting admin verification",
+    payment_verified: "Payment verified, awaiting final approval",
+    approved: "Approved - vacation authorized",
+    denied: "Denied",
+  }
+
   const destinationLabels: Record<string, string> = {
     retreat: "Retreat / Spiritual Renewal",
     family_visit: "Family Visit",
@@ -99,8 +109,12 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
         body: JSON.stringify({ id: request.id }),
       })
 
+      const data = await res.json()
+
       if (res.ok) {
         onUpdate()
+      } else {
+        alert(data.error || "Verification failed")
       }
     } catch (error) {
       alert("Verification failed")
@@ -109,8 +123,29 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
     }
   }
 
+  async function approveRequest() {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: request.id,
+          status: "approved",
+        }),
+      })
+
+      if (res.ok) {
+        onUpdate()
+      }
+    } catch (error) {
+      alert("Approval failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Check if receiptUrl is a base64 data URL
-  const isBase64 = request.receiptUrl?.startsWith("data:")
   const isImage = request.receiptUrl?.startsWith("data:image/")
   const isPdf = request.receiptUrl?.startsWith("data:application/pdf")
 
@@ -126,6 +161,7 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
               </span>
             </div>
             <p className="text-gray-600">{request.priestParish} &bull; {request.priestDiocese}</p>
+            <p className="text-xs text-gray-400 mt-1">{statusFlow[request.status]}</p>
           </div>
           <div className="text-right text-sm text-gray-400">
             <p>Submitted: {new Date(request.createdAt).toLocaleDateString()}</p>
@@ -225,16 +261,37 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
             )}
 
             {request.status === "payment_pending" && (
-              <div className="mt-3">
+              <div className="mt-3 flex gap-2">
                 <button
                   onClick={verifyPayment}
                   disabled={loading}
                   className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
                 >
-                  {loading ? "Verifying..." : "✓ Verify Payment"}
+                  {loading ? "Verifying..." : "✓ Verify Payment (Valid)"}
+                </button>
+                <button
+                  onClick={() => { setStatus("payment_required"); setEditing(true) }}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700 transition-colors"
+                >
+                  ⚠ Request More Payment
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {request.status === "payment_verified" && (
+          <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-lg">
+            <p className="text-sm text-teal-700 mb-2">
+              Payment verified by {request.paymentVerifiedBy} on {request.paymentVerifiedAt ? new Date(request.paymentVerifiedAt).toLocaleDateString() : "N/A"}
+            </p>
+            <button
+              onClick={approveRequest}
+              disabled={loading}
+              className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? "Approving..." : "✓ Final Approve Vacation"}
+            </button>
           </div>
         )}
 

@@ -13,13 +13,6 @@ export async function POST(request: Request) {
   try {
     const { requestId, receiptData, fileName, fileType } = await request.json()
 
-    console.log("Upload receipt called:")
-    console.log("  requestId:", requestId)
-    console.log("  userId:", session.user.id)
-    console.log("  fileName:", fileName)
-    console.log("  fileType:", fileType)
-    console.log("  receiptData length:", receiptData?.length)
-
     if (!requestId || !receiptData) {
       return NextResponse.json({ error: "Missing requestId or receipt data" }, { status: 400 })
     }
@@ -33,25 +26,30 @@ export async function POST(request: Request) {
     })
 
     if (!existingRequest) {
-      console.log("Request not found:", requestId)
       return NextResponse.json({ error: "Request not found or not authorized" }, { status: 404 })
     }
 
-    // For now, store the base64 data directly in the database
-    // In production, you should upload to Cloudinary/S3 and store the URL
-    const receiptUrl = receiptData
+    // Only allow upload if status is payment_required
+    if (existingRequest.status !== "payment_required") {
+      return NextResponse.json({ 
+        error: "Cannot upload receipt. Request status is not awaiting payment." 
+      }, { status: 400 })
+    }
 
+    // Update request: status = payment_pending (waiting for admin verification)
     await prisma.vacationRequest.update({
       where: { id: requestId },
       data: {
-        status: "payment_pending",
-        receiptUrl,
+        status: "payment_pending",  // NOT approved - waiting for admin review
+        receiptUrl: receiptData,
         receiptUploadedAt: new Date(),
       },
     })
 
-    console.log("Receipt uploaded successfully for request:", requestId)
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true, 
+      message: "Receipt uploaded. Waiting for admin verification." 
+    })
   } catch (error: any) {
     console.error("Upload error:", error)
     return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 })
