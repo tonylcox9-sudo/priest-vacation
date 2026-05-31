@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs"
 
 declare module "next-auth" {
   interface User {
+    id?: string
     role?: string
     userType?: "user" | "admin"
   }
@@ -22,6 +23,7 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
+    id?: string
     role?: string
     userType?: "user" | "admin"
   }
@@ -90,6 +92,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.id = user.id
         token.role = user.role
         token.userType = user.userType
       }
@@ -97,6 +100,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
+        session.user.id = token.id
         session.user.role = token.role
         session.user.userType = token.userType
       }
