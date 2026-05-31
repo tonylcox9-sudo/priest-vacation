@@ -73,6 +73,36 @@ export default function VacationForm() {
 
       <div>
         <h3 className="text-lg font-semibold text-[#2D1B4E] mb-4 border-b border-[#C9A227]/30 pb-2">
+          Your Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Full Name *</label>
+            <input name="requesterName" required className={inputClass} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email *</label>
+            <input name="requesterEmail" type="email" required className={inputClass} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+            <input name="requesterPhone" type="tel" className={inputClass} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Relationship to Priest *</label>
+            <select name="relationship" required className={selectClass}>
+              <option value="">Select...</option>
+              <option value="family">Family Member</option>
+              <option value="parishioner">Parishioner</option>
+              <option value="friend">Friend</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-[#2D1B4E] mb-4 border-b border-[#C9A227]/30 pb-2">
           Priest Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
