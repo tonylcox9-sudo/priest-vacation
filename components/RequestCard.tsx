@@ -42,6 +42,7 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
   const [accountNumber, setAccountNumber] = useState(request.accountNumber || "")
   const [accountName, setAccountName] = useState(request.accountName || "")
   const [loading, setLoading] = useState(false)
+  const [showReceipt, setShowReceipt] = useState(false)
 
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -174,19 +175,53 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
         )}
 
         {request.receiptUrl && (
-          <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-xs text-orange-500 uppercase tracking-wider mb-1">Payment Receipt Uploaded</p>
+          <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-orange-600 uppercase tracking-wider font-bold">Payment Receipt Uploaded</p>
+              <button
+                onClick={() => setShowReceipt(!showReceipt)}
+                className="text-sm text-[#2D1B4E] font-medium hover:text-[#C9A227] transition-colors"
+              >
+                {showReceipt ? "Hide Receipt" : "View Receipt"}
+              </button>
+            </div>
             <p className="text-sm text-gray-700 mb-2">
               Uploaded: {request.receiptUploadedAt ? new Date(request.receiptUploadedAt).toLocaleDateString() : "Unknown"}
             </p>
+
+            {showReceipt && (
+              <div className="mt-3 p-3 bg-white rounded-lg border border-orange-200">
+                {request.receiptUrl.endsWith(".pdf") ? (
+                  <a
+                    href={request.receiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[#2D1B4E] font-medium hover:text-[#C9A227]"
+                  >
+                    <span>📄</span> Open PDF Receipt
+                  </a>
+                ) : (
+                  <a href={request.receiptUrl} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={request.receiptUrl}
+                      alt="Payment Receipt"
+                      className="max-w-full max-h-96 rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                    />
+                  </a>
+                )}
+              </div>
+            )}
+
             {request.status === "payment_pending" && (
-              <button
-                onClick={verifyPayment}
-                disabled={loading}
-                className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
-              >
-                {loading ? "Verifying..." : "&check; Verify Payment"}
-              </button>
+              <div className="mt-3">
+                <button
+                  onClick={verifyPayment}
+                  disabled={loading}
+                  className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                >
+                  {loading ? "Verifying..." : "✓ Verify Payment"}
+                </button>
+              </div>
             )}
           </div>
         )}
