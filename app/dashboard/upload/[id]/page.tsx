@@ -7,16 +7,20 @@ export default function UploadReceiptPage({ params }: { params: { id: string } }
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!file) return
 
     setLoading(true)
+    setError("")
 
     const formData = new FormData()
     formData.append("receipt", file)
     formData.append("requestId", params.id)
+
+    console.log("Uploading receipt for requestId:", params.id)
 
     try {
       const res = await fetch("/api/upload-receipt", {
@@ -24,13 +28,17 @@ export default function UploadReceiptPage({ params }: { params: { id: string } }
         body: formData,
       })
 
+      const data = await res.json()
+      console.log("Upload response:", data)
+
       if (res.ok) {
         router.push("/dashboard")
       } else {
-        alert("Upload failed")
+        setError(data.error || "Upload failed")
       }
-    } catch (error) {
-      alert("Something went wrong")
+    } catch (error: any) {
+      console.error("Upload error:", error)
+      setError(error.message || "Something went wrong")
     } finally {
       setLoading(false)
     }
@@ -42,7 +50,14 @@ export default function UploadReceiptPage({ params }: { params: { id: string } }
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-[#2D1B4E]">Upload Payment Receipt</h1>
           <p className="text-gray-500">Upload proof of payment for verification</p>
+          <p className="text-xs text-gray-400 mt-1">Request ID: {params.id}</p>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#C9A227] transition-colors">
@@ -74,7 +89,7 @@ export default function UploadReceiptPage({ params }: { params: { id: string } }
 
         <div className="mt-6 text-center">
           <button onClick={() => router.push("/dashboard")} className="text-sm text-gray-400 hover:text-[#2D1B4E]">
-            ← Back to Dashboard
+            &larr; Back to Dashboard
           </button>
         </div>
       </div>

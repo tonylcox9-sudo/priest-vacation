@@ -15,8 +15,26 @@ export async function POST(request: Request) {
     const requestId = formData.get("requestId") as string
     const file = formData.get("receipt") as File
 
+    console.log("Upload receipt called:")
+    console.log("  requestId:", requestId)
+    console.log("  userId:", session.user.id)
+    console.log("  file:", file?.name)
+
     if (!requestId || !file) {
-      return NextResponse.json({ error: "Missing data" }, { status: 400 })
+      return NextResponse.json({ error: "Missing requestId or receipt file" }, { status: 400 })
+    }
+
+    // Verify the request exists and belongs to this user
+    const existingRequest = await prisma.vacationRequest.findFirst({
+      where: {
+        id: requestId,
+        userId: session.user.id,
+      }
+    })
+
+    if (!existingRequest) {
+      console.log("Request not found:", requestId)
+      return NextResponse.json({ error: "Request not found or not authorized" }, { status: 404 })
     }
 
     // In production, upload to Cloudinary, S3, or UploadThing
@@ -33,9 +51,10 @@ export async function POST(request: Request) {
       },
     })
 
+    console.log("Receipt uploaded successfully for request:", requestId)
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload error:", error)
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 })
   }
 }
