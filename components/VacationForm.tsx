@@ -7,17 +7,15 @@ export default function VacationForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState("")
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
+    setError("")
 
     const formData = new FormData(e.currentTarget)
     const data = {
-      requesterName: formData.get("requesterName"),
-      requesterEmail: formData.get("requesterEmail"),
-      requesterPhone: formData.get("requesterPhone"),
-      relationship: formData.get("relationship"),
       priestName: formData.get("priestName"),
       priestParish: formData.get("priestParish"),
       priestDiocese: formData.get("priestDiocese"),
@@ -34,12 +32,16 @@ export default function VacationForm() {
         body: JSON.stringify(data),
       })
 
+      const result = await res.json()
+
       if (res.ok) {
         setSuccess(true)
-        setTimeout(() => router.push("/"), 3000)
+        setTimeout(() => router.push("/dashboard"), 3000)
+      } else {
+        setError(result.error || "Failed to submit request. Please try again.")
       }
     } catch (error) {
-      alert("Something went wrong. Please try again.")
+      setError("Something went wrong. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -53,6 +55,7 @@ export default function VacationForm() {
         <p className="text-gray-600 mt-2">
           You will receive a confirmation email shortly. The diocese will respond within 48 hours.
         </p>
+        <p className="text-sm text-gray-400 mt-4">Redirecting to dashboard...</p>
       </div>
     )
   }
@@ -62,35 +65,11 @@ export default function VacationForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      <div>
-        <h3 className="text-lg font-semibold text-[#2D1B4E] mb-4 border-b border-[#C9A227]/30 pb-2">
-          Your Information
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Full Name *</label>
-            <input name="requesterName" required className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email *</label>
-            <input name="requesterEmail" type="email" required className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-            <input name="requesterPhone" type="tel" className={inputClass} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Relationship to Priest *</label>
-            <select name="relationship" required className={selectClass}>
-              <option value="">Select...</option>
-              <option value="family">Family Member</option>
-              <option value="parishioner">Parishioner</option>
-              <option value="friend">Friend</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+          {error}
         </div>
-      </div>
+      )}
 
       <div>
         <h3 className="text-lg font-semibold text-[#2D1B4E] mb-4 border-b border-[#C9A227]/30 pb-2">
