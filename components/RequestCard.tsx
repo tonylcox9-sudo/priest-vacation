@@ -145,9 +145,18 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
     }
   }
 
-  // Check if receiptUrl is a base64 data URL
-  const isImage = request.receiptUrl?.startsWith("data:image/")
-  const isPdf = request.receiptUrl?.startsWith("data:application/pdf")
+  // Detect file type from base64 data URL
+  const getFileType = (url: string | null): string => {
+    if (!url) return "unknown"
+    if (url.startsWith("data:image/")) return "image"
+    if (url.startsWith("data:application/pdf")) return "pdf"
+    if (url.startsWith("data:")) return "other"
+    return "url"
+  }
+
+  const fileType = getFileType(request.receiptUrl)
+  const isImage = fileType === "image"
+  const isPdf = fileType === "pdf"
 
   return (
     <div className="bg-white rounded-xl shadow-md border-l-4 border-[#2D1B4E] overflow-hidden">
@@ -233,29 +242,65 @@ export default function RequestCard({ request, onUpdate }: { request: Request; o
             {showReceipt && (
               <div className="mt-3 p-3 bg-white rounded-lg border border-orange-200">
                 {isImage ? (
-                  <img
-                    src={request.receiptUrl}
-                    alt="Payment Receipt"
-                    className="max-w-full max-h-96 rounded-lg border border-gray-200"
-                  />
+                  <div>
+                    <img
+                      src={request.receiptUrl}
+                      alt="Payment Receipt"
+                      className="max-w-full max-h-96 rounded-lg border border-gray-200"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">Image receipt</p>
+                  </div>
                 ) : isPdf ? (
-                  <a
-                    href={request.receiptUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-[#2D1B4E] font-medium hover:text-[#C9A227]"
-                  >
-                    <span>📄</span> Open PDF Receipt
-                  </a>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">📄 PDF Receipt</p>
+                    <div className="w-full h-96 rounded-lg border border-gray-200 overflow-hidden">
+                      <iframe
+                        src={request.receiptUrl}
+                        className="w-full h-full"
+                        title="PDF Receipt"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const newWindow = window.open()
+                        if (newWindow) {
+                          newWindow.document.write(`
+                            <html>
+                              <head><title>PDF Receipt</title></head>
+                              <body style="margin:0">
+                                <iframe src="${request.receiptUrl}" width="100%" height="100%" style="border:none"></iframe>
+                              </body>
+                            </html>
+                          `)
+                        }
+                      }}
+                      className="text-sm text-[#C9A227] underline"
+                    >
+                      Open PDF in new window
+                    </button>
+                  </div>
                 ) : (
-                  <a
-                    href={request.receiptUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-[#2D1B4E] font-medium hover:text-[#C9A227]"
-                  >
-                    <span>📄</span> View Receipt
-                  </a>
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-gray-500">Receipt file uploaded</p>
+                    <button
+                      onClick={() => {
+                        const newWindow = window.open()
+                        if (newWindow && request.receiptUrl) {
+                          newWindow.document.write(`
+                            <html>
+                              <head><title>Receipt</title></head>
+                              <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5">
+                                <iframe src="${request.receiptUrl}" width="90%" height="90vh" style="border:none"></iframe>
+                              </body>
+                            </html>
+                          `)
+                        }
+                      }}
+                      className="mt-2 text-sm bg-[#2D1B4E] text-[#C9A227] px-4 py-2 rounded-md"
+                    >
+                      View Receipt
+                    </button>
+                  </div>
                 )}
               </div>
             )}

@@ -13,12 +13,46 @@ export default function UploadReceiptPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
+  const acceptedTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/gif",
+    "image/webp",
+    "image/bmp",
+    "image/svg+xml",
+    "image/tiff",
+    "image/heic",
+    "image/heif",
+    "application/pdf",
+  ]
+
+  const acceptedExtensions = ".png,.jpg,.jpeg,.gif,.webp,.bmp,.svg,.tiff,.heic,.heif,.pdf"
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] || null
     setFile(selected)
     setError("")
+    setPreview(null)
 
-    if (selected) {
+    if (!selected) return
+
+    // Validate file type
+    if (!acceptedTypes.includes(selected.type) && !selected.name.toLowerCase().endsWith(".pdf")) {
+      setError("Invalid file type. Please upload an image (PNG, JPG, GIF, WEBP, etc.) or PDF.")
+      setFile(null)
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (selected.size > 10 * 1024 * 1024) {
+      setError("File too large. Maximum size is 10MB.")
+      setFile(null)
+      return
+    }
+
+    // Create preview for images
+    if (selected.type.startsWith("image/")) {
       const reader = new FileReader()
       reader.onloadend = () => {
         setPreview(reader.result as string)
@@ -95,7 +129,7 @@ export default function UploadReceiptPage() {
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#C9A227] transition-colors">
             <input
               type="file"
-              accept="image/*,.pdf"
+              accept={acceptedExtensions}
               onChange={handleFileChange}
               required
               className="hidden"
@@ -106,7 +140,10 @@ export default function UploadReceiptPage() {
               <p className="text-gray-600 font-medium">
                 {file ? file.name : "Click to upload receipt"}
               </p>
-              <p className="text-sm text-gray-400 mt-1">PNG, JPG, or PDF</p>
+              <p className="text-sm text-gray-400 mt-1">
+                PNG, JPG, GIF, WEBP, BMP, SVG, TIFF, HEIC, PDF
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Max 10MB</p>
             </label>
           </div>
 
@@ -118,6 +155,12 @@ export default function UploadReceiptPage() {
                 alt="Receipt preview"
                 className="max-w-full max-h-64 rounded-lg border border-gray-200"
               />
+            </div>
+          )}
+
+          {file && file.type === "application/pdf" && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">📄 PDF selected: {file.name}</p>
             </div>
           )}
 
